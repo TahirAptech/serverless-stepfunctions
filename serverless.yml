@@ -1,0 +1,63 @@
+service: my-stepfunction
+frameworkVersion: '2 || 3'
+plugins:
+  - serverless-step-functions
+provider:
+  name: aws
+  runtime: nodejs16.x
+  profile: tahir
+  lambdaHashingVersion: 20201221
+  region: us-east-1
+  stage: dev
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - states:CreateStateMachine
+        - states:DeleteStateMachine
+        - states:DescribeStateMachine
+        - states:ListStateMachines
+        - states:StartExecution
+        - states:StopExecution
+      Resource: '*'
+
+functions:
+  extractDataFunction:
+    handler: functions/extractData.handler
+  processDataFunction:
+    handler: functions/processData.handler
+  sendDataFunction:
+    handler: functions/sendData.handler
+  stepLambdaFunction:
+    handler: functions/hello.handler
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - states:StartExecution
+        Resource: '*'
+
+stepFunctions:
+  stateMachines:
+    myStateMachine:
+      type: STANDARD
+      definition:
+        Comment: "My first step function example"
+        StartAt: ExtractData
+        States:
+          ExtractData:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [extractDataFunction, Arn]
+            Next: ProcessData
+          ProcessData:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [processDataFunction, Arn]
+            Next: SendData
+          SendData:
+            Type: Task
+            Resource:
+              Fn::GetAtt: [sendDataFunction, Arn]
+            End: true
+      tags:
+        Project: MyProject
+            
