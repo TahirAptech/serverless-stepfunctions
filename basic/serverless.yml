@@ -58,6 +58,4 @@ stepFunctions:
             Resource:
               Fn::GetAtt: [sendDataFunction, Arn]
             End: true
-      tags:
-        Project: MyProject
             
