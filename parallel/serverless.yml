@@ -57,7 +57,7 @@ stepFunctions:
                     Type: Task
                     Resource:
                       Fn::GetAtt: [extractDataFunction, Arn]
-                      InputPath: "$.inputForBranch1"   # Specify the input path for TaskA branch
+                      InputPath: "$.inputForBranch1"
                     Next: ProcessData
                   ProcessData:
                     Type: Task
