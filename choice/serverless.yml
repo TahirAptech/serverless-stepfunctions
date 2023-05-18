@@ -1,0 +1,72 @@
+service: my-stepfunctions-choice
+frameworkVersion: '2 || 3'
+plugins:
+  - serverless-step-functions
+provider:
+  name: aws
+  runtime: nodejs16.x
+  profile: rafae
+  lambdaHashingVersion: 20201221
+  region: us-east-1
+  stage: dev
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - states:CreateStateMachine
+        - states:DeleteStateMachine
+        - states:DescribeStateMachine
+        - states:ListStateMachines
+        - states:StartExecution
+        - states:StopExecution
+      Resource: '*'
+
+stepFunctions:
+  stateMachines:
+    myStateMachine:
+      definition:
+        Comment: "Choice state example!"
+        StartAt: ChoiceStateExample
+        States:
+          ChoiceStateExample:
+            Type: Choice
+            Choices:
+              - And:
+                  - Variable: "$.status"
+                    StringEquals: "completed"
+                  - Variable: "$.priority"
+                    NumericLessThanEquals: 5
+                Next: "HighPriorityCompletedState"
+              - Variable: "$.status"
+                StringEquals: "completed"
+                Next: "CompletedState"
+              - Variable: "$.status"
+                StringEquals: "pending"
+                Next: "PendingState"
+              - Variable: "$.status"
+                StringEquals: "failed"
+                Next: "FailedState"
+            Default: "UnknownState"
+          HighPriorityCompletedState:
+            Type: Pass
+            Result: "Task with high priority is completed."
+            End: true
+          CompletedState:
+            Type: Pass
+            Result: "Task completed successfully"
+            End: true
+          FailedState:
+            Type: Pass
+            Result: "Task failed"
+            End: true
+          PendingState:
+            Type: Pass
+            Result: "Task is still pending"
+            Next: "MyNextState"
+          MyNextState:
+            Type: Pass
+            Result: "`MyNextState` executed successfully."
+            End: true
+          UnknownState:
+            Type: Fail
+            Cause: "No Matches!"
+            

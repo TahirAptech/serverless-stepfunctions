@@ -1,4 +1,4 @@
-service: my-stepfunction
+service: my-stepfunctions-map
 frameworkVersion: '2 || 3'
 plugins:
   - serverless-step-functions
@@ -21,11 +21,11 @@ provider:
       Resource: '*'
 
 functions:
-  extractDataFunction:
+  extractDataMap:
     handler: functions/extractData.handler
-  processDataFunction:
+  processDataMap:
     handler: functions/processData.handler
-  sendDataFunction:
+  sendDataMap:
     handler: functions/sendData.handler
   stepLambdaFunction:
     handler: functions/hello.handler
@@ -40,22 +40,29 @@ stepFunctions:
     myStateMachine:
       type: STANDARD
       definition:
-        Comment: "My first step function example!"
-        StartAt: ExtractData
+        Comment: "Map state machine example!"
+        StartAt: MapState
         States:
-          ExtractData:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [extractDataFunction, Arn]
-            Next: ProcessData
-          ProcessData:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [processDataFunction, Arn]
-            Next: SendData
-          SendData:
-            Type: Task
-            Resource:
-              Fn::GetAtt: [sendDataFunction, Arn]
+          MapState:
+            Type: Map
+            ItemsPath: "$.inputArray"
+            Iterator:
+              StartAt: ExtractData
+              States:
+                ExtractData:
+                  Type: Task
+                  Resource:
+                    Fn::GetAtt: [extractDataMap, Arn]
+                  Next: ProcessData
+                ProcessData:
+                  Type: Task
+                  Resource:
+                    Fn::GetAtt: [processDataMap, Arn]
+                  Next: SendData
+                SendData:
+                  Type: Task
+                  Resource:
+                    Fn::GetAtt: [sendDataMap, Arn]
+                  End: true
             End: true
             
