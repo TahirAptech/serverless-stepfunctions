@@ -1,4 +1,4 @@
-service: my-stepfunction
+service: my-stepfunctions-task
 frameworkVersion: '2 || 3'
 plugins:
   - serverless-step-functions
@@ -21,8 +21,6 @@ provider:
       Resource: '*'
 
 functions:
-  extractDataFunction:
-    handler: functions/extractData.handler
   processDataFunction:
     handler: functions/processData.handler
   sendDataFunction:
@@ -43,17 +41,22 @@ stepFunctions:
         Comment: "My first step function example!"
         StartAt: ExtractData
         States:
-          ExtractData:
+          ExtractData: # state 1
             Type: Task
-            Resource:
-              Fn::GetAtt: [extractDataFunction, Arn]
+            Resource: arn:aws:states:::dynamodb:getItem
+            Parameters:
+              TableName: "ProductTable"
+              Key:
+                id.$: "$.queryStringParameters.id"
+            ResultPath: "$.myDynamodbRecord"
             Next: ProcessData
-          ProcessData:
+          ProcessData: # state 2
             Type: Task
             Resource:
               Fn::GetAtt: [processDataFunction, Arn]
+            InputPath: "$"
             Next: SendData
-          SendData:
+          SendData: # state 3
             Type: Task
             Resource:
               Fn::GetAtt: [sendDataFunction, Arn]

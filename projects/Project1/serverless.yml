@@ -1,0 +1,178 @@
+service: my-stepfunctions-project1
+frameworkVersion: '2 || 3'
+plugins:
+  - serverless-step-functions
+provider:
+  name: aws
+  runtime: nodejs16.x
+  profile: rafae
+  lambdaHashingVersion: 20201221
+  region: us-east-1
+  stage: dev
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:*
+      Resource:
+          - Fn::GetAtt: [OrganizationTable, Arn]
+          - Fn::GetAtt: [ProductTable, Arn]
+          - Fn::GetAtt: [OrderTable, Arn]
+          - Fn::GetAtt: [CollectionTable, Arn]
+    - Effect: Allow
+      Action:
+        - states:CreateStateMachine
+        - states:DeleteStateMachine
+        - states:DescribeStateMachine
+        - states:ListStateMachines
+        - states:StartExecution
+        - states:StopExecution
+      Resource: '*'
+    - Effect: 'Allow'
+      Action:
+        - 'dynamodb:Query'
+      Resource:
+        - Fn::Join:
+            - '/'
+            - - !GetAtt ProductTable.Arn
+              - 'index/*'
+        - Fn::Join:
+            - '/'
+            - - !GetAtt OrderTable.Arn
+              - 'index/*'
+        - Fn::Join:
+            - '/'
+            - - !GetAtt CollectionTable.Arn
+              - 'index/*'
+
+functions:
+  fetchOrganizationFunction:
+    handler: functions/fetchOrganization.handler
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:*
+        Resource: 
+          - Fn::GetAtt: [OrganizationTable, Arn]
+          - Fn::GetAtt: [ProductTable, Arn]
+          - Fn::GetAtt: [OrderTable, Arn]
+          - Fn::GetAtt: [CollectionTable, Arn]
+  processDataFunction:
+    handler: functions/processData.handler
+
+stepFunctions:
+  stateMachines:
+    myStateMachine:
+      definition:
+        Comment: "Project1"
+        StartAt: FetchOrganization
+        States:
+          FetchOrganization: # state 1
+            Type: Task
+            Resource:
+              Fn::GetAtt: [fetchOrganizationFunction, Arn]
+              # ResultPath: "$.res" # no need
+            Next: ProcessMapData
+          ProcessMapData:
+            Type: Map
+            ItemsPath: "$"
+            Iterator:
+              StartAt: FetchResoucesByOrgId
+              States:
+                FetchResoucesByOrgId:
+                  Type: Map
+                  Items:
+                  Iterator:
+                    StartAt: FetchResouceByOrg
+                    States:
+                      FetchResouceByOrg:
+                        Type: Task
+                        Resource:
+                          Fn::GetAtt: [processDataFunction, Arn]
+                        End: true
+                  End: true
+            End: true
+
+resources:
+  Resources:
+    OrganizationTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        TableName: OrganizationTable
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: 'org_id'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'org_id'
+            KeyType: 'HASH'
+
+    ProductTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        TableName: ProductTable
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: 'id'
+            AttributeType: 'S'
+          - AttributeName: 'org_id'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'id'
+            KeyType: 'HASH'
+        GlobalSecondaryIndexes:
+          - IndexName: 'ByOrgId'
+            KeySchema:
+              - AttributeName: 'org_id'
+                KeyType: 'HASH'
+            Projection:
+              ProjectionType: 'ALL'
+
+    OrderTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        TableName: OrderTable
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: 'order_id'
+            AttributeType: 'S'
+          - AttributeName: 'org_id'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'order_id'
+            KeyType: 'HASH'
+        GlobalSecondaryIndexes:
+          - IndexName: 'ByOrgId'
+            KeySchema:
+              - AttributeName: 'org_id'
+                KeyType: 'HASH'
+            Projection:
+              ProjectionType: 'ALL'
+
+    CollectionTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        TableName: CollectionTable
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: 'collection_id'
+            AttributeType: 'S'
+          - AttributeName: 'org_id'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'collection_id'
+            KeyType: 'HASH'
+        GlobalSecondaryIndexes:
+          - IndexName: 'ByOrgId'
+            KeySchema:
+              - AttributeName: 'org_id'
+                KeyType: 'HASH'
+            Projection:
+              ProjectionType: 'ALL'
