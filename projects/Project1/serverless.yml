@@ -70,17 +70,23 @@ stepFunctions:
             Type: Task
             Resource:
               Fn::GetAtt: [fetchOrganizationFunction, Arn]
-              # ResultPath: "$.res" # no need
-            Next: ProcessMapData
-          ProcessMapData:
+            ResultPath: "$.taskOutput"
+            Next: MapEachOrganization
+          MapEachOrganization:
             Type: Map
-            ItemsPath: "$"
+            ItemsPath: "$.taskOutput.data"
+            Parameters: 
+              item.$: "$$.Map.Item.Value"
+              resources.$: "$.taskOutput.resourcesToSync"
             Iterator:
               StartAt: FetchResoucesByOrgId
               States:
                 FetchResoucesByOrgId:
                   Type: Map
-                  Items:
+                  ItemsPath: "$.resources"
+                  Parameters: 
+                    item.$: "$$.Map.Item.Value"
+                    resources.$: "$.item"
                   Iterator:
                     StartAt: FetchResouceByOrg
                     States:
