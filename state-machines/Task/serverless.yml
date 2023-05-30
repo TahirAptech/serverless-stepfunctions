@@ -35,8 +35,14 @@ functions:
 
 stepFunctions:
   stateMachines:
-    myStateMachine:
-      type: STANDARD
+    myExpressStateMachine:
+      name: "ExpressStateMachine"
+      type: EXPRESS
+      loggingConfig:
+        level: ALL
+        includeExecutionData: true
+        destinations:
+          - !GetAtt LogGroup.Arn
       definition:
         Comment: "My first step function example!"
         StartAt: ExtractData
@@ -61,4 +67,8 @@ stepFunctions:
             Resource:
               Fn::GetAtt: [sendDataFunction, Arn]
             End: true
-            
+
+resources:
+  Resources:
+    LogGroup:
+      Type: AWS::Logs::LogGroup
