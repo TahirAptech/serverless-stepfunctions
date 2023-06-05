@@ -1,4 +1,4 @@
-exports.handler = async (event) => {
+export const handler = async (event) => {
     // Code to send the data to an external service
     console.log("sendDataFunction running..");
     console.log("event", event);
@@ -7,6 +7,6 @@ exports.handler = async (event) => {
     return result;
 };
 
-async function sendDataToExternalService(event) {
+async function sendDataToExternalService(event: any) {
     return { result: `Finally dynamodb data has been send to external service!`, data: event.data};
 }

@@ -1,6 +1,7 @@
-const AWS = require('aws-sdk');
+import AWS from 'aws-sdk';
 const { unmarshall } = AWS.DynamoDB.Converter;
-exports.handler = async (event) => {
+
+export const handler = async (event) => {
     const processedData = await processData(unmarshall(event.myDynamodbRecord.Item));
     console.log("Process running..");
     console.log("event", event);

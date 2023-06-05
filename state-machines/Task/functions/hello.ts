@@ -1,8 +1,8 @@
-const AWS = require('aws-sdk');
+import AWS from 'aws-sdk';
 const stepFunctions = new AWS.StepFunctions();
 // AWS.config.update({ region: 'us-east-1' }); 
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
     // ARN of state machine
     const stateMachineArn = 'arn:aws:states:us-east-1:300205417350:stateMachine:MyStateMachineStepFunctionsStateMachine-7aszf0HVbx7y';
     const params = {
